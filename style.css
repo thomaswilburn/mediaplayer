@@ -1,0 +1,27 @@
+* { 
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: color-mix(in srgb, #808, black);
+  --fg: white;
+
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body {
+  margin: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+
+  & media-player {
+    flex: 1;
+  }
+}
+
+input[type="file"] {
+  position: absolute;
+  left: -1000px;
+}
