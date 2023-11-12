@@ -27,9 +27,33 @@ var template = `
   display: flex;
   padding: 20px;
   gap: 20px;
+  align-items: center;
+
+  button {
+    aspect-ratio: 1;
+    width: 48px;
+    display: grid;
+    justify-content: center;
+    align-items: center;
+    border-radius: 100%;
+    border: 1px solid white;
+    background: #808;
+    color: white;
+
+    & svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    & path {
+      fill: currentColor;
+    }
+
+  }
 
   #play {
-    aspect-ratio: 1;
+    &[data-state="playing"] .play-icon { display: none; }
+    &[data-state="paused"] .pause-icon { display: none; }
   }
 
   #track {
@@ -47,8 +71,19 @@ var template = `
     <video as="video" hidden></video>
   </div>
   <div class="controls">
-    <button id="play" as="play">PLAY</button>
+    <button id="play" as="play" data-state="paused">
+      <svg viewBox="0 0 16 16">
+        <path class="play-icon" d="M6,2 L12,8 L6,14 Z" />
+        <path class="pause-icon" d="M5,2 l2,0 l0,12 l-2,0 l0,-14 M9,2 l2,0 l0,12 l-2,0 l0,-14" /> 
+      </svg>
+    </button>
+    <button as="skip">
+      <svg viewBox="0 0 16 16">
+        <path d="M5,3 l3,5 l-3,5 l0,-10 M10,3 l3,5 l-3,5 l0,-10" />
+      </svg>
+    </button>
     <input type="range" id="track" as="track" value=0>
+    <div as="timecode"></div>
   </div>
 </div>
 `
@@ -75,9 +110,10 @@ export class MediaPlayer extends HTMLElement {
       }
     }
 
-    var { track, play } = this.#elements;
+    var { track, play, skip } = this.#elements;
     play.addEventListener("click", this.handlePlayButton.bind(this));
     track.addEventListener("input", this.handleRange.bind(this));
+    skip.addEventListener("click", this.handleSkipButton.bind(this));
   }
 
   play(file) {
@@ -100,11 +136,17 @@ export class MediaPlayer extends HTMLElement {
 
   handleMediaEvent(e) {
     var { currentTime, duration, paused } = e.target;
-    var { play, track } = this.#elements;
-    play.innerHTML = paused ? "play" : "pause";
+    var { play, track, timecode } = this.#elements;
+    play.dataset.state = paused ? "paused" : "playing";
     track.min = 0;
     track.max = duration;
     track.value = currentTime;
+    var minutes = 60;
+    var hours = Math.floor(currentTime / (60 * 60));
+    var minutes = Math.floor((currentTime - hours) / 60);
+    var seconds = Math.floor(currentTime % 60);
+    var pad = n => n.toString().padStart(2, "0");
+    timecode.innerHTML = [hours, minutes, seconds].map(pad).join(":");
   }
 
   handlePlayButton(e) {
@@ -115,6 +157,10 @@ export class MediaPlayer extends HTMLElement {
     } else {
       player.pause();
     }
+  }
+
+  handleSkipButton(e) {
+    this.#activePlayer.currentTime += 15;
   }
 
   handleRange() {

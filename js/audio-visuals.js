@@ -25,7 +25,9 @@ class VisibilityTicker extends EventTarget {
 }
 
 const FFT_SIZE = 32;
-const FFT_WINDOW = 24;
+const FFT_WINDOW = 32;
+const TICK_RATE = 500;
+const WAVEFORMS = 20;
 
 var template = `
 <style>
@@ -45,12 +47,45 @@ canvas, svg {
 
 line {
   stroke: white;
-  stroke-width: 10px;
+  stroke-width: 4px;
   stroke-linecap: round;
+}
+
+@keyframes joy-division {
+  from {
+    translate: 0 30%;
+    opacity: 0;
+  }
+
+  2% {
+    opacity: 1;
+  }
+
+  98% {
+    opacity: 1;
+  }
+
+  to {
+    translate: 0 -40%;
+    scale: .7;
+    opacity: 0;
+  }
+}
+
+path {
+  stroke: white;
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+  fill: none;
+  animation-name: joy-division;
+  animation-fill-mode: forwards;
+  animation-duration: 10s;
+  animation-timing-function: linear;
+  transform-origin: center;
 }
 </style>
 <!-- <canvas></canvas> -->
-<svg viewBox="0 -1 ${FFT_WINDOW + 1} 2" preserveAspectRatio="none">
+<svg viewBox="0 -8 ${FFT_WINDOW + 1} 16" preserveAspectRatio="none">
 </svg>
 <slot></slot>
 `;
@@ -68,36 +103,29 @@ export class AudioVisual extends HTMLElement {
     slot.addEventListener("slotchange", this.handleSlotChange.bind(this));
 
     this.audioContext = new AudioContext();
-    this.analyzer = new AnalyserNode(this.audioContext, { fftSize: 64 });
+    this.analyzer = new AnalyserNode(this.audioContext, {
+      fftSize: FFT_SIZE * 2,
+      smoothingTimeConstant: 0
+    });
     window.analyzer = this.analyzer;
 
-    var svg = root.querySelector("svg");
-    for (var i = 0; i < FFT_WINDOW; i++) {
-      var bar = document.createElementNS(svg.namespaceURI, "line");
-      bar.setAttribute("vector-effect", "non-scaling-stroke");
-      bar.setAttribute("x1", i + 1);
-      bar.setAttribute("x2", i + 1);
-      bar.setAttribute("y1", -.5);
-      bar.setAttribute("y2", .5);
-      svg.append(bar);
-      this.#bars.push(bar);
-    }
+    this.svg = root.querySelector("svg");
 
-    this.clock = new VisibilityTicker(100);
+    this.clock = new VisibilityTicker(TICK_RATE);
     this.clock.addEventListener("tick", this.handleTick.bind(this));
   }
 
   handleTick() {
     var frequencies = new Uint8Array(this.analyzer.frequencyBinCount);
     this.analyzer.getByteFrequencyData(frequencies);
-    var start = (FFT_SIZE - FFT_WINDOW) / 2;
-    frequencies = frequencies.slice(start, start + FFT_WINDOW);
-    for (var i = 0; i < frequencies.length; i++) {
-      var byte = frequencies[i];
-      var ratio = byte / 255 * .8;
-      var bar = this.#bars[i];
-      bar.setAttribute("y1", -ratio);
-      bar.setAttribute("y2", ratio);
+    if (frequencies.every(f => f == 0)) return;
+    var d = [...frequencies].map((b, i) => `${i ? "L" : "M"}${i+1},${(b - 128) / 128}`).join(" ");
+    var ns = this.svg.namespaceURI;
+    var path = document.createElementNS(ns, "path");
+    path.setAttribute("d", d);
+    this.svg.append(path);
+    if (this.svg.children.length > WAVEFORMS) {
+      this.svg.firstElementChild.remove();
     }
   }
 
