@@ -25,7 +25,7 @@ class VisibilityTicker extends EventTarget {
 }
 
 const FFT_SIZE = 32;
-const FFT_WINDOW = 32;
+const FFT_WINDOW = 24;
 const TICK_RATE = 500;
 const WAVEFORMS = 20;
 
@@ -53,8 +53,8 @@ line {
 
 @keyframes joy-division {
   from {
-    translate: 0 30%;
-    opacity: 0;
+    transform: translateY(30%);
+    opacity: 1;
   }
 
   2% {
@@ -66,8 +66,7 @@ line {
   }
 
   to {
-    translate: 0 -40%;
-    scale: .7;
+    transform: translateY(-40%) scale(.7);
     opacity: 0;
   }
 }
@@ -105,7 +104,7 @@ export class AudioVisual extends HTMLElement {
     this.audioContext = new AudioContext();
     this.analyzer = new AnalyserNode(this.audioContext, {
       fftSize: FFT_SIZE * 2,
-      smoothingTimeConstant: 0
+      smoothingTimeConstant: .1
     });
     window.analyzer = this.analyzer;
 
@@ -116,7 +115,7 @@ export class AudioVisual extends HTMLElement {
   }
 
   handleTick() {
-    var frequencies = new Uint8Array(this.analyzer.frequencyBinCount);
+    var frequencies = new Uint8Array(FFT_WINDOW);
     this.analyzer.getByteFrequencyData(frequencies);
     if (frequencies.every(f => f == 0)) return;
     var d = [...frequencies].map((b, i) => `${i ? "L" : "M"}${i+1},${(b - 128) / 128}`).join(" ");
