@@ -25,4 +25,19 @@ body {
 input[type="file"] {
   position: absolute;
   left: -1000px;
+
+  & + label {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    text-transform: uppercase;
+
+    & svg {
+      height: 16px;
+      width: 16px;
+    }
+  }
 }
+

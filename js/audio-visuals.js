@@ -75,11 +75,11 @@ path {
   stroke: white;
   stroke-width: 1px;
   vector-effect: non-scaling-stroke;
-  fill: none;
-  animation-name: joy-division;
+  fill: black;
+  /* animation-name: joy-division;
   animation-fill-mode: forwards;
   animation-duration: 10s;
-  animation-timing-function: linear;
+  animation-timing-function: linear; */
   transform-origin: center;
 }
 </style>
@@ -93,6 +93,7 @@ export class AudioVisual extends HTMLElement {
   #elements = [];
   #sources = new Map();
   #bars = [];
+  #paused = true;
 
   constructor() {
     super();
@@ -104,7 +105,7 @@ export class AudioVisual extends HTMLElement {
     this.audioContext = new AudioContext();
     this.analyzer = new AnalyserNode(this.audioContext, {
       fftSize: FFT_SIZE * 2,
-      smoothingTimeConstant: .1
+      smoothingTimeConstant: 0
     });
     window.analyzer = this.analyzer;
 
@@ -115,17 +116,24 @@ export class AudioVisual extends HTMLElement {
   }
 
   handleTick() {
+    if (this.#paused) return;
     var frequencies = new Uint8Array(FFT_WINDOW);
     this.analyzer.getByteFrequencyData(frequencies);
     if (frequencies.every(f => f == 0)) return;
-    var d = [...frequencies].map((b, i) => `${i ? "L" : "M"}${i+1},${(b - 128) / 128}`).join(" ");
+    var d = [...frequencies].map((b, i) => `L${i+1},${(b - 128) / -128}`).join(" ");
+    d = `M1,1 ${d} L${FFT_WINDOW},1 Z`
     var ns = this.svg.namespaceURI;
     var path = document.createElementNS(ns, "path");
     path.setAttribute("d", d);
+    var animation = path.animate([
+      { translate: "0 30%", scale: 1 },
+      { translate: "0 -40%", scale: .8 }
+    ], { duration: 10 * 1000, iterations: 1 });
     this.svg.append(path);
-    if (this.svg.children.length > WAVEFORMS) {
-      this.svg.firstElementChild.remove();
-    }
+    animation.addEventListener("finish", () => path.remove());
+    // if (this.svg.children.length > WAVEFORMS) {
+    //   this.svg.firstElementChild.remove();
+    // }
   }
 
   handleSlotChange(e) {
@@ -143,7 +151,20 @@ export class AudioVisual extends HTMLElement {
   }
 
   start() {
+    this.#paused = false;
     this.audioContext.resume();
+    var animations = this.svg.getAnimations({ subtree: true });
+    for (var animation of animations) {
+      animation.play();
+    }
+  }
+
+  pause() {
+    this.#paused = true;
+    var animations = this.svg.getAnimations({ subtree: true });
+    for (var animation of animations) {
+      animation.pause();
+    }
   }
 
   connectElement(element) {

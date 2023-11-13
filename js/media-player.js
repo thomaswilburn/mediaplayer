@@ -150,12 +150,14 @@ export class MediaPlayer extends HTMLElement {
   }
 
   handlePlayButton(e) {
-    var { audio, video } = this.#elements;
+    var { audio, video, visualizer } = this.#elements;
     var player = this.#activePlayer || audio;
     if (player.paused) {
       player.play();
+      visualizer.start();
     } else {
       player.pause();
+      visualizer.pause();
     }
   }
 
