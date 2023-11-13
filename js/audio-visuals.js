@@ -7,8 +7,10 @@ class VisibilityTicker extends EventTarget {
     window.addEventListener("visibilitychange", () => {
       var visible = document.visibilityState == "visible";
       if (visible) {
+        this.dispatchEvent(new CustomEvent("visible"));
         this.tick();
       } else {
+        this.dispatchEvent(new CustomEvent("hidden"));
         window.clearTimeout(this.timeout);
       }
     });
@@ -114,6 +116,8 @@ export class AudioVisual extends HTMLElement {
 
     this.clock = new VisibilityTicker(TICK_RATE);
     this.clock.addEventListener("tick", this.handleTick.bind(this));
+    this.clock.addEventListener("visible", this.start.bind(this));
+    this.clock.addEventListener("hidden", this.pause.bind(this));
   }
 
   handleTick() {
@@ -158,9 +162,10 @@ export class AudioVisual extends HTMLElement {
   start() {
     this.#paused = false;
     this.audioContext.resume();
-    var animations = this.svg.getAnimations({ subtree: true });
-    for (var animation of animations) {
-      animation.play();
+    for (var path of this.svg.querySelectorAll("path")) {
+      var animations = path.getAnimations();
+      if (!animations.length) path.remove();
+      animations.forEach(a => a.play());
     }
   }
 

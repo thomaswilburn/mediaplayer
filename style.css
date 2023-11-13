@@ -5,17 +5,18 @@
 :root {
   --bg: color-mix(in srgb, #808, black);
   --fg: white;
-
-  background: var(--bg);
-  color: var(--fg);
-  font-family: system-ui, sans-serif;
+  background: black;
 }
 
 body {
-  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  margin: 0 auto;
   height: 100dvh;
   display: flex;
   flex-direction: column;
+  max-width: 600px;
 
   & media-player {
     flex: 1;
