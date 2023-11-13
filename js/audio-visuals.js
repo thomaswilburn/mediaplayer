@@ -26,8 +26,7 @@ class VisibilityTicker extends EventTarget {
 
 const FFT_SIZE = 32;
 const FFT_WINDOW = 24;
-const TICK_RATE = 500;
-const WAVEFORMS = 20;
+const TICK_RATE = 300;
 
 var template = `
 <style>
@@ -75,11 +74,13 @@ path {
   stroke: white;
   stroke-width: 1px;
   vector-effect: non-scaling-stroke;
-  fill: black;
-  /* animation-name: joy-division;
-  animation-fill-mode: forwards;
-  animation-duration: 10s;
-  animation-timing-function: linear; */
+  fill: none;
+
+  &.filled {
+    fill: black;
+    stroke: none;
+  }
+
   transform-origin: center;
 }
 </style>
@@ -120,20 +121,24 @@ export class AudioVisual extends HTMLElement {
     var frequencies = new Uint8Array(FFT_WINDOW);
     this.analyzer.getByteFrequencyData(frequencies);
     if (frequencies.every(f => f == 0)) return;
-    var d = [...frequencies].map((b, i) => `L${i+1},${(b - 128) / -128}`).join(" ");
-    d = `M1,1 ${d} L${FFT_WINDOW},1 Z`
+    var d = [...frequencies].map((b, i) => `${i+1},${(b - 128) / -128}`).join(" ");
     var ns = this.svg.namespaceURI;
-    var path = document.createElementNS(ns, "path");
-    path.setAttribute("d", d);
-    var animation = path.animate([
+    var outline = document.createElementNS(ns, "path");
+    outline.setAttribute("d", "M" + d);
+    outline.setAttribute("class", "outlined");
+    var timeline = [
       { translate: "0 30%", scale: 1 },
       { translate: "0 -40%", scale: .8 }
-    ], { duration: 10 * 1000, iterations: 1 });
-    this.svg.append(path);
-    animation.addEventListener("finish", () => path.remove());
-    // if (this.svg.children.length > WAVEFORMS) {
-    //   this.svg.firstElementChild.remove();
-    // }
+    ];
+    var options = { duration: 10 * 1000, iterations: 1 };
+    d = `M1,1 L${d} L${FFT_WINDOW},1 Z`;
+    var fill = document.createElementNS(ns, "path");
+    fill.setAttribute("d", d);
+    fill.setAttribute("class", "filled");
+    var remover = () => fill.remove() || outline.remove();
+    this.svg.append(fill, outline);
+    fill.animate(timeline, options).addEventListener("finish", remover);
+    outline.animate(timeline, options).addEventListener("finish", remover);
   }
 
   handleSlotChange(e) {

@@ -29,7 +29,7 @@ var template = `
   gap: 20px;
   align-items: center;
 
-  button {
+  & button {
     aspect-ratio: 1;
     width: 48px;
     display: grid;
