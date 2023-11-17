@@ -1,4 +1,5 @@
 import { AudioVisual } from "./audio-visuals.js";
+import { echo } from "./echo.js";
 
 var template = `
 <style>
@@ -20,6 +21,7 @@ var template = `
     inset: 0 0 0 0;
     object-fit: contain;
     background: black;
+    pointer-events: none;
   }
 }
 
@@ -64,7 +66,7 @@ var template = `
 
 </style>
 <div class="outer">
-  <div class="visual-container">
+  <div class="visual-container" as="visuals">
     <audio-visual as="visualizer">
       <audio as="audio"></audio>
     </audio-visual>
@@ -83,13 +85,14 @@ var template = `
       </svg>
     </button>
     <input type="range" id="track" as="track" value=0>
-    <div as="timecode"></div>
+    <div as="timecode">00:00:00</div>
   </div>
 </div>
 `
 
 export class MediaPlayer extends HTMLElement {
   #src = null;
+  #file = null;
   #elements = {};
   #activePlayer = null;
 
@@ -104,22 +107,26 @@ export class MediaPlayer extends HTMLElement {
 
     var { audio, video } = this.#elements;
     for (var mediaElement of [ audio, video ]) {
-      var events = "canplay loaded playing paused timeupdate".split(" ");
+      var events = "canplay loaded ended playing paused timeupdate".split(" ");
       for (var event of events) {
         mediaElement.addEventListener(event, this.handleMediaEvent.bind(this));
       }
     }
 
-    var { track, play, skip } = this.#elements;
+    var { track, play, skip, visuals } = this.#elements;
     play.addEventListener("click", this.handlePlayButton.bind(this));
+    visuals.addEventListener("click", this.handlePlayButton.bind(this));
     track.addEventListener("input", this.handleRange.bind(this));
     skip.addEventListener("click", this.handleSkipButton.bind(this));
+
+    echo.addEventListener("media-requestplay", (e) => this.play(e.detail));
   }
 
   play(file) {
     if (this.#src) {
-      // URL.revokeObjectURL(this.#src);
+      URL.revokeObjectURL(this.#src);
     }
+    this.#file = file;
     this.#src = URL.createObjectURL(file);
     var { audio, video, visualizer } = this.#elements;
     audio.src = "";
@@ -132,6 +139,7 @@ export class MediaPlayer extends HTMLElement {
     player.src = this.#src;
     player.play();
     visualizer.start();
+    this.scrollIntoView({ behavior: "smooth" });
   }
 
   handleMediaEvent(e) {
@@ -147,9 +155,14 @@ export class MediaPlayer extends HTMLElement {
     var seconds = Math.floor(currentTime % 60);
     var pad = n => n.toString().padStart(2, "0");
     timecode.innerHTML = [hours, minutes, seconds].map(pad).join(":");
+    var event = `media-${e.type}`;
+    echo.shout(event, this.#file);
   }
 
   handlePlayButton(e) {
+    if (!this.#src) {
+      return echo.shout("media-requestfile");
+    }
     var { audio, video, visualizer } = this.#elements;
     var player = this.#activePlayer || audio;
     if (player.paused) {

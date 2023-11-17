@@ -7,16 +7,30 @@
     <link rel="stylesheet" href="./style.css">
   </head>
   <body>
-    <div class="file-picker">
-      <input type="file" id="file">
-      <label for="file">
-        Load file
-        <svg viewBox="0 0 16 16" preserveAspectRatio="none">
-          <path stroke="currentColor" fill="none" d="M0,8 L4,8 L6,3 L8,14 L9,3 L11,12 L12,8 L16,8" stroke-linejoin="round" />
-        </svg>
-      </label>
-    </div>
-    <media-player></media-player>
+    <main>
+
+      <section class="screen-panel" id="player-panel">
+        <header>
+          <input type="file" id="file">
+          <label for="file">
+            <svg viewBox="0 0 16 16" preserveAspectRatio="none">
+              <path stroke="currentColor" fill="none" d="M0,8 L4,8 L6,3 L8,14 L9,3 L11,12 L12,8 L16,8" stroke-linejoin="round" />
+            </svg>
+            Load file
+          </label>
+
+          <button class="scroll-to" data-dest="playlist">Playlist &raquo;</button>
+        </header>
+        <media-player></media-player>
+      </section>
+
+      <section class="screen-panel" id="playlist-panel">
+        <header>
+          <button class="scroll-to" data-dest="player">&laquo; Player</button>
+        </header>
+        <media-playlist></media-playlist>
+      </section>
+    </main>
     <script type="module" src="js/main.js"></script>
   </body>
 </html>
