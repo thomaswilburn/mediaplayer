@@ -26,9 +26,9 @@ class VisibilityTicker extends EventTarget {
   }
 }
 
-const FFT_SIZE = 32;
-const FFT_WINDOW = 24;
-const TICK_RATE = 300;
+const FFT_SIZE = 128;
+const FFT_WINDOW = 96;
+const TICK_RATE = 400;
 
 var template = `
 <style>
@@ -122,17 +122,21 @@ export class AudioVisual extends HTMLElement {
 
   handleTick() {
     if (this.#paused) return;
-    var frequencies = new Uint8Array(FFT_WINDOW);
+    var frequencies = new Uint8Array(FFT_SIZE);
     this.analyzer.getByteFrequencyData(frequencies);
     if (frequencies.every(f => f == 0)) return;
-    var d = [...frequencies].map((b, i) => `${i+1},${(b - 128) / -128}`).join(" ");
+    var offset = 0;//(FFT_SIZE - FFT_WINDOW) / 2;
+    frequencies = frequencies.slice(offset, offset + FFT_WINDOW);
+    var d = [...frequencies].map((b, i) => `${i+1},${1 - (b / 255)}`).join(" ");
     var ns = this.svg.namespaceURI;
     var outline = document.createElementNS(ns, "path");
     outline.setAttribute("d", "M" + d);
     outline.setAttribute("class", "outlined");
     var timeline = [
-      { translate: "0 30%", scale: 1 },
-      { translate: "0 -40%", scale: .8 }
+      { opacity: .01, translate: "0 30%" },
+      { offset: .05, opacity: 1 },
+      { offset: .95, opacity: 1 },
+      { opacity: .01, translate: "0 -40%", scale: .8 }
     ];
     var options = { duration: 10 * 1000, iterations: 1 };
     d = `M1,1 L${d} L${FFT_WINDOW},1 Z`;

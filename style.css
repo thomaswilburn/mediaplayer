@@ -21,6 +21,7 @@ main {
   min-width: 0;
   width: 100vw;
   gap: 4px;
+  max-width: 1200px;
 
   @media (max-width: 600px) {
     display: grid;
