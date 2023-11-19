@@ -1,75 +1,7 @@
 import { echo } from "./echo.js";
 
-var template = `
-<style>
-  input[type="file"] {
-    position: absolute;
-    left: -10000px;
-  }
-
-  .container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-
-  ul {
-    list-style-type: none;
-    display: block;
-    margin: 0;
-    padding: 0;
-    background: black;
-    flex: 1 1 0;
-    overflow-y: scroll;
-
-    & li {
-      font-size: 13px;
-      background: #333;
-      margin-bottom: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      padding: 8px 2px;
-      cursor: pointer;
-
-      &.active {
-        font-weight: bold;
-      }
-    }
-  }
-
-  .toolbar {
-    display: flex;
-    align-items: stretch;
-    justify-content: space-around;
-    text-transform: uppercase;
-    font-family: inherit;
-    gap: 4px;
-    background: black;
-
-    & label, & button {
-      flex: 1;
-      appearance: none;
-      border: none;
-      color: inherit;
-      background: var(--bg);
-      font-family: inherit;
-      text-transform: inherit;
-      font-size: inherit;
-      text-align: center;
-      padding: 4px;
-    }
-  }
-</style>
-<div class="container">
-  <ul as="tracks"></ul>
-  <div class="toolbar">
-    <input type="file" id="file-input" as="add" multiple accept="audio/*, video/*">
-    <label for="file-input">Add tracks</label>
-    <button as="clear">Clear playlist</button>
-  </div>
-</div>
-`;
+var templatePath = new URL("media-playlist.html", import.meta.url).toString();
+var template = await fetch(templatePath).then(r => r.text());
 
 class MediaPlaylist extends HTMLElement {
 
@@ -89,8 +21,9 @@ class MediaPlaylist extends HTMLElement {
     clear.addEventListener("click", this.handleClearButton.bind(this));
     tracks.addEventListener("click", this.handleTrackSelection.bind(this));
 
-    echo.addEventListener("media-timeupdate", this.handleMediaEvent.bind(this));
-    echo.addEventListener("media-ended", this.handleMediaEvent.bind(this));
+    echo.addEventListener("media:timeupdate", this.handleMediaEvent.bind(this));
+    echo.addEventListener("media:ended", this.handleMediaEvent.bind(this));
+    echo.addEventListener("playlist:openfile", () => this.#elements.add.click());
   }
 
   handleAddFile(e) {
@@ -104,8 +37,7 @@ class MediaPlaylist extends HTMLElement {
       tracks.append(li);
     }
     if (wasEmpty) {
-      console.log(files[0]);
-      echo.shout("media-requestplay", files[0]);
+      echo.shout("player:play", files[0]);
     }
   }
 
@@ -119,7 +51,7 @@ class MediaPlaylist extends HTMLElement {
   handleTrackSelection(e) {
     var { file } = e.target;
     if (!file) return;
-    echo.shout("media-requestplay", file);
+    echo.shout("player:play", file);
   }
 
   handleMediaEvent(e) {
@@ -129,7 +61,7 @@ class MediaPlaylist extends HTMLElement {
       var active = list.find(li => li.file == file);
       var next = active.nextElementSibling;
       if (!next) return;
-      echo.shout("media-requestplay", next.file);
+      echo.shout("player:play", next.file);
     }
     for (var li of this.#elements.tracks.children) {
       if (li.file) {

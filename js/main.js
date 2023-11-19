@@ -2,18 +2,8 @@ import "./media-player.js";
 import "./media-playlist.js";
 import { echo } from "./echo.js";
 
-var fileInput = document.querySelector("#file");
-var player = document.querySelector("media-player");
-
-fileInput.addEventListener("input", function(e) {
-  var [ file ] = e.target.files;
-  var { name, type } = file;
-  player.play(file);
-});
-
-echo.addEventListener("media-requestfile", function(e) {
-  fileInput.click();
-});
+var singleButton = document.querySelector(".load-file");
+singleButton.addEventListener("click", _ => echo.shout("playlist:openfile"));
 
 function scrollApp(e) {
   var targets = {

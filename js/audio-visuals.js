@@ -30,67 +30,9 @@ const FFT_SIZE = 128;
 const FFT_WINDOW = 96;
 const TICK_RATE = 400;
 
-var template = `
-<style>
-:host {
-  display: block;
-  position: relative;
-}
-
-canvas, svg {
-  display: block;
-  position: absolute;
-  inset: 0 0 0 0;
-  width: 100%;
-  height: 100%;
-  background: color-mix(in srgb, black, transparent);
-}
-
-line {
-  stroke: white;
-  stroke-width: 4px;
-  stroke-linecap: round;
-}
-
-@keyframes joy-division {
-  from {
-    transform: translateY(30%);
-    opacity: 1;
-  }
-
-  2% {
-    opacity: 1;
-  }
-
-  98% {
-    opacity: 1;
-  }
-
-  to {
-    transform: translateY(-40%) scale(.7);
-    opacity: 0;
-  }
-}
-
-path {
-  stroke: white;
-  stroke-width: 1px;
-  vector-effect: non-scaling-stroke;
-  fill: none;
-
-  &.filled {
-    fill: black;
-    stroke: none;
-  }
-
-  transform-origin: center;
-}
-</style>
-<!-- <canvas></canvas> -->
-<svg viewBox="0 -8 ${FFT_WINDOW + 1} 16" preserveAspectRatio="none">
-</svg>
-<slot></slot>
-`;
+var templatePath = new URL("audio-visuals.html", import.meta.url).toString();
+var template = await fetch(templatePath.toString()).then(r => r.text());
+template = template.replace("$WINDOW", FFT_WINDOW + 1);
 
 export class AudioVisual extends HTMLElement {
   #elements = [];

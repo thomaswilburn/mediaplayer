@@ -77,14 +77,9 @@ section {
   }
 }
 
-input[type="file"] {
-  position: absolute;
-  left: -1000px;
-
-  & + label {
-    & svg {
-      height: 16px;
-      width: 16px;
-    }
+.load-file {
+  & svg {
+    height: 16px;
+    width: 16px;
   }
 }
