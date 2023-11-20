@@ -5,8 +5,7 @@ class VisibilityTicker extends EventTarget {
     super();
     this.frequency = frequency;
     window.addEventListener("visibilitychange", () => {
-      var visible = document.visibilityState == "visible";
-      if (visible) {
+      if (!document.hidden) {
         this.dispatchEvent(new CustomEvent("visible"));
         this.tick();
       } else {
@@ -19,10 +18,9 @@ class VisibilityTicker extends EventTarget {
   }
 
   tick() {
+    if (document.hidden) return;
     this.dispatchEvent(new CustomEvent("tick"));
-    if (document.visibilityState == "visible") {
-      this.timeout = window.setTimeout(this.tick, this.frequency);
-    }
+    this.timeout = window.setTimeout(this.tick, this.frequency);
   }
 }
 
@@ -80,7 +78,7 @@ export class AudioVisual extends HTMLElement {
       { offset: .95, opacity: 1 },
       { opacity: .01, translate: "0 -40%", scale: .8 }
     ];
-    var options = { duration: 10 * 1000, iterations: 1 };
+    var options = { duration: 10 * 1000, iterations: 1, fill: "both" };
     d = `M1,1 L${d} L${FFT_WINDOW},1 Z`;
     var fill = document.createElementNS(ns, "path");
     fill.setAttribute("d", d);
@@ -111,15 +109,15 @@ export class AudioVisual extends HTMLElement {
     for (var path of this.svg.querySelectorAll("path")) {
       var animations = path.getAnimations();
       if (!animations.length) path.remove();
-      animations.forEach(a => a.play());
+      for (var a of animations) a.play();
     }
   }
 
   pause() {
     this.#paused = true;
-    var animations = this.svg.getAnimations({ subtree: true });
-    for (var animation of animations) {
-      animation.pause();
+    for (var path of this.svg.querySelectorAll("path")) {
+      var animations = path.getAnimations();
+      for (var a of animations) a.pause();
     }
   }
 

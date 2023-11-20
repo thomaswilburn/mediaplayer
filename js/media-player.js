@@ -75,7 +75,7 @@ export class MediaPlayer extends HTMLElement {
 
   handlePlayButton(e) {
     if (!this.#src) {
-      return echo.shout("player:openfile");
+      return echo.shout("playlist:openfile");
     }
     var { audio, video, visualizer } = this.#elements;
     var player = this.#activePlayer || audio;
