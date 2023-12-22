@@ -2,36 +2,26 @@ import { AudioVisual } from "./audio-visuals.js";
 import { echo } from "./echo.js";
 
 var templatePath = new URL("media-player.html", import.meta.url).toString();
-var template = await fetch(templatePath).then(r => r.text());
+var html = await fetch(templatePath).then(r => r.text());
 
-export class MediaPlayer extends HTMLElement {
+import { ConspiracyElement } from "https://thomaswilburn.github.io/conspiracy/index.js";
+
+export class MediaPlayer extends ConspiracyElement {
   #src = null;
   #file = null;
-  #elements = {};
-  #activePlayer = null;
+  activePlayer = null;
+  static template = html;
 
   constructor() {
     super();
-    var root = this.attachShadow({ mode: "open" });
-    root.innerHTML = template;
-    for (var element of root.querySelectorAll("[as]")) {
-      var name = element.getAttribute("as");
-      this.#elements[name] = element;
+
+    var bind = ["handlePlayButton", "handleRange", "handleSkipButton"];
+    for (var f of bind) {
+      this[f] = this[f].bind(this);
     }
 
-    var { audio, video } = this.#elements;
-    for (var mediaElement of [ audio, video ]) {
-      var events = "canplay loaded ended playing paused timeupdate".split(" ");
-      for (var event of events) {
-        mediaElement.addEventListener(event, this.handleMediaEvent.bind(this));
-      }
-    }
-
-    var { track, play, skip, visuals } = this.#elements;
-    play.addEventListener("click", this.handlePlayButton.bind(this));
-    visuals.addEventListener("click", this.handlePlayButton.bind(this));
-    track.addEventListener("input", this.handleRange.bind(this));
-    skip.addEventListener("click", this.handleSkipButton.bind(this));
+    this.ui.refs.audio.isAudio = true;
+    this.activePlayer = this.ui.refs.audio;
 
     echo.addEventListener("player:play", (e) => this.play(e.detail));
   }
@@ -42,43 +32,38 @@ export class MediaPlayer extends HTMLElement {
     }
     this.#file = file;
     this.#src = URL.createObjectURL(file);
-    var { audio, video, visualizer } = this.#elements;
+    var { audio, video, visualizer } = this.ui.refs;
     audio.src = "";
     video.src = "";
     var [ media ] = file.type.split("/");
-    video.toggleAttribute("hidden", media != "video");
-    visualizer.toggleAttribute("hidden", media != "audio");
     var player = media == "video" ? video : audio;
-    this.#activePlayer = player;
+    this.activePlayer = player;
     player.src = this.#src;
     player.play();
     visualizer.start();
     this.scrollIntoView({ behavior: "smooth" });
+    this.render();
   }
 
-  handleMediaEvent(e) {
+  handleEvent(e) {
     var { currentTime, duration, paused } = e.target;
-    var { play, track, timecode } = this.#elements;
-    play.dataset.state = paused ? "paused" : "playing";
-    track.min = 0;
-    track.max = duration;
-    track.value = currentTime;
     var minutes = 60;
     var hours = Math.floor(currentTime / (60 * 60));
     var minutes = Math.floor((currentTime - hours) / 60);
     var seconds = Math.floor(currentTime % 60);
     var pad = n => n.toString().padStart(2, "0");
-    timecode.innerHTML = [hours, minutes, seconds].map(pad).join(":");
+    this.timecode = [hours, minutes, seconds].map(pad).join(":");
     var event = `media:${e.type}`;
     echo.shout(event, this.#file);
+    this.render();
   }
 
   handlePlayButton(e) {
     if (!this.#src) {
       return echo.shout("playlist:openfile");
     }
-    var { audio, video, visualizer } = this.#elements;
-    var player = this.#activePlayer || audio;
+    var { audio, video, visualizer } = this.ui.refs;
+    var player = this.activePlayer || audio;
     if (player.paused) {
       player.play();
       visualizer.start();
@@ -89,12 +74,12 @@ export class MediaPlayer extends HTMLElement {
   }
 
   handleSkipButton(e) {
-    this.#activePlayer.currentTime += 15;
+    this.activePlayer.currentTime += 15;
   }
 
-  handleRange() {
-    var { track } = this.#elements;
-    this.#activePlayer.currentTime = track.valueAsNumber;
+  handleRange(e) {
+    var track = e.target;
+    this.activePlayer.currentTime = track.valueAsNumber;
   }
 }
 

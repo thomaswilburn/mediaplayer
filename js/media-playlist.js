@@ -1,51 +1,45 @@
 import { echo } from "./echo.js";
 
 var templatePath = new URL("media-playlist.html", import.meta.url).toString();
-var template = await fetch(templatePath).then(r => r.text());
+var html = await fetch(templatePath).then(r => r.text());
 
-class MediaPlaylist extends HTMLElement {
+import { ConspiracyElement } from "https://thomaswilburn.github.io/conspiracy/index.js";
 
-  #elements = {};
+class MediaPlaylist extends ConspiracyElement {
+  static template = html;
+  files = [];
 
   constructor() {
     super();
-    var root = this.attachShadow({ mode: "open" });
-    root.innerHTML = template;
-    for (var as of root.querySelectorAll("[as]")) {
-      var name = as.getAttribute("as");
-      this.#elements[name] = as;
+
+    var binds = ["handleAddFile", "handleClearButton", "handleTrackSelection", "handleMediaEvent"];
+    for (var f of binds) {
+      this[f] = this[f].bind(this);
     }
 
-    var { add, clear, tracks } = this.#elements;
-    add.addEventListener("input", this.handleAddFile.bind(this));
-    clear.addEventListener("click", this.handleClearButton.bind(this));
-    tracks.addEventListener("click", this.handleTrackSelection.bind(this));
-
-    echo.addEventListener("media:timeupdate", this.handleMediaEvent.bind(this));
-    echo.addEventListener("media:ended", this.handleMediaEvent.bind(this));
-    echo.addEventListener("playlist:openfile", () => this.#elements.add.click());
+    echo.addEventListener("media:timeupdate", this.handleMediaEvent);
+    echo.addEventListener("media:ended", this.handleMediaEvent);
+    echo.addEventListener("playlist:openfile", this.handleAddFile);
   }
 
   handleAddFile(e) {
-    var { tracks } = this.#elements;
-    var wasEmpty = tracks.children.length == 0;
-    var files = e.target.files;
-    for (var file of files) {
-      var li = document.createElement("li");
-      li.innerHTML = file.name;
-      li.file = file;
-      tracks.append(li);
+    if (!e.target.files) {
+      // open the file picker
+      return this.ui.refs.input.click();
     }
+    var wasEmpty = this.files.length == 0;
+    for (var file of e.target.files) {
+      this.files.push({ name: file.name, file })
+    }
+    this.render();
     if (wasEmpty) {
-      echo.shout("player:play", files[0]);
+      echo.shout("player:play", this.files[0].file);
     }
   }
 
   handleClearButton(e) {
-    var { tracks } = this.#elements;
-    while (tracks.children.length) {
-      tracks.children[0].remove();
-    }
+    this.files.length = 0;
+    this.render();
   }
 
   handleTrackSelection(e) {
@@ -56,18 +50,17 @@ class MediaPlaylist extends HTMLElement {
 
   handleMediaEvent(e) {
     var file = e.detail;
-    if (e.type == "media-ended") {
-      var list = [...this.#elements.tracks.querySelectorAll("li")];
-      var active = list.find(li => li.file == file);
-      var next = active.nextElementSibling;
+    if (e.type == "media:ended") {
+      var active = this.files.find(li => li.file == file);
+      var index = this.files.indexOf(active);
+      var next = this.files[index+1];
       if (!next) return;
       echo.shout("player:play", next.file);
     }
-    for (var li of this.#elements.tracks.children) {
-      if (li.file) {
-        li.classList.toggle("active", li.file == file);
-      }
+    for (var li of this.files) {
+      li.active = li.file == file;
     }
+    this.render();
   }
 
 }

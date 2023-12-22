@@ -50,8 +50,12 @@
   }
 
   #play {
-    &[data-state="playing"] .play-icon { display: none; }
-    &[data-state="paused"] .pause-icon { display: none; }
+    .pause-icon { display: none }
+
+    &.playing {
+      .play-icon { display: none; }
+      .pause-icon { display: block; }
+    }
   }
 
   #track {
@@ -62,25 +66,37 @@
 
 </style>
 <div class="outer">
-  <div class="visual-container" as="visuals">
-    <audio-visual as="visualizer">
-      <audio as="audio"></audio>
+  <div class="visual-container">
+    <audio-visual ref:visualizer attr:hidden.toggle.not="activePlayer.isAudio">
+      <audio handle:canplay.loaded.ended.playing.paused.timeupdate ref:audio></audio>
     </audio-visual>
-    <video as="video" hidden></video>
+    <video attr:hidden.toggle="activePlayer.isAudio" 
+      handle:canplay.loaded.ended.playing.paused.timeupdate
+      ref:video
+    ></video>
   </div>
   <div class="controls">
-    <button id="play" as="play" data-state="paused">
+    <button on:click="handlePlayButton" id="play" class:playing.not="activePlayer.paused">
       <svg viewBox="0 0 16 16">
         <path class="play-icon" d="M6,2 L12,8 L6,14 Z" />
         <path class="pause-icon" d="M5,2 l2,0 l0,12 l-2,0 l0,-14 M9,2 l2,0 l0,12 l-2,0 l0,-14" /> 
       </svg>
     </button>
-    <button as="skip">
+    <button on:click="handleSkipButton">
       <svg viewBox="0 0 16 16">
         <path d="M5,3 l3,5 l-3,5 l0,-10 M10,3 l3,5 l-3,5 l0,-10" />
       </svg>
     </button>
-    <input type="range" id="track" as="track" value=0>
-    <div as="timecode">00:00:00</div>
+    <input
+      type="range" id="track"
+      ref:="track"
+      value="0"
+      step=".1"
+      prop:value="activePlayer.currentTime"
+      prop:max="activePlayer.duration"
+      on:input="handleRange">
+    <div ref:="timecode">
+      <!-- text:timecode -->
+    </div>
   </div>
 </div>

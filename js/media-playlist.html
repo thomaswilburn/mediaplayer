@@ -59,10 +59,14 @@
   }
 </style>
 <div class="container">
-  <ul as="tracks"></ul>
+  <ul as="tracks" on:click="handleTrackSelection">
+    <li each:="files" prop:file="file" class:active="active">
+      <!-- text:name -->
+    </li>
+  </ul>
   <div class="toolbar">
-    <input type="file" id="file-input" as="add" multiple accept="audio/*, video/*">
+    <input on:input="handleAddFile" ref:input type="file" id="file-input" multiple accept="audio/*, video/*">
     <label for="file-input">Add tracks</label>
-    <button as="clear">Clear playlist</button>
+    <button on:click="handleClearButton">Clear playlist</button>
   </div>
 </div>
